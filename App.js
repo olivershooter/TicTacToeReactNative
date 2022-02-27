@@ -76,6 +76,42 @@ export default function App() {
       }
     }
     //Check the diagonals
+    let isTheDiagonal1AllO = true;
+    let isTheDiagonal1AllX = true;
+
+    //This one is for the second diagonal
+    let isTheDiagonal2AllO = true;
+    let isTheDiagonal2AllX = true;
+
+    for (let i = 0; i < 3; i++) {
+      if (boardMap[i][i] != "o") {
+        isTheDiagonal1AllO = false;
+      }
+      if (boardMap[i][i] != "x") {
+        isTheDiagonal1AllX = false;
+      }
+
+      //Check second diagonal
+      if (boardMap[i][2 - i] != "o") {
+        isTheDiagonal2AllO = false;
+      }
+      if (boardMap[i][2 - i] != "x") {
+        isTheDiagonal2AllX = false;
+      }
+    }
+
+    if (isTheDiagonal1AllO) {
+      Alert.alert(`O won. Diagonal 1.`);
+    }
+    if (isTheDiagonal1AllX) {
+      Alert.alert(`X won. Diagonal 1.`);
+    }
+    if (isTheDiagonal2AllO) {
+      Alert.alert(`O won. Diagonal 1.`);
+    }
+    if (isTheDiagonal2AllX) {
+      Alert.alert(`X won. Diagonal 1.`);
+    }
   };
 
   return (
