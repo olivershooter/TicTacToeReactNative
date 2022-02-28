@@ -1,17 +1,8 @@
 import { StatusBar } from "expo-status-bar";
-import {
-  StyleSheet,
-  Text,
-  View,
-  ImageBackground,
-  Pressable,
-  Alert,
-} from "react-native";
-
-import React, { useState } from "react";
+import { StyleSheet, Text, View, ImageBackground, Alert } from "react-native";
+import React, { useState, useEffect } from "react";
 
 import bg from "./assets/bg.jpeg";
-
 import Cell from "./src/components/Cell";
 
 const emptyBoardMap = [
@@ -20,10 +11,32 @@ const emptyBoardMap = [
   ["", "", ""], //3rd Row
 ];
 
+const boardMapCopy = (original) => {
+  const copy = original.map((arr) => {
+    return arr.slice();
+  });
+  return copy;
+};
+
 export default function App() {
   const [boardMap, setMap] = useState(emptyBoardMap);
-
   const [currentTurn, setCurrentTurn] = useState("x");
+  const [gameMode, setGameMode] = useState("BOT_HARD");
+
+  useEffect(() => {
+    if (currentTurn === "o" && gameMode != "LOCAL") {
+      botTurn();
+    }
+  }, [currentTurn, gameMode]);
+
+  useEffect(() => {
+    const winner = getWinner(boardMap);
+    if (winner) {
+      gameEnd(winner);
+    } else {
+      checkTiedState();
+    }
+  }, [boardMap]);
 
   const onPress = (rowIndex, columnIndex) => {
     if (boardMap[rowIndex][columnIndex] !== "") {
@@ -38,80 +51,69 @@ export default function App() {
     });
 
     setCurrentTurn(currentTurn === "x" ? "o" : "x");
-
-    const winner = getWinner();
-    if (winner) {
-      gameEnd(winner);
-    } else {
-      checkTiedState();
-    }
   };
 
-  const getWinner = () => {
-    //Check the rows
+  const getWinner = (winnerMap) => {
+    // Check rows
     for (let i = 0; i < 3; i++) {
-      const isTheRowAllX = boardMap[i].every((cell) => cell === "x");
-      const isTheRowAllO = boardMap[i].every((cell) => cell === "o");
-      if (isTheRowAllX) {
+      const isRowXWinning = winnerMap[i].every((cell) => cell === "x");
+      const isRowOWinning = winnerMap[i].every((cell) => cell === "o");
+
+      if (isRowXWinning) {
         return "x";
       }
-
-      if (isTheRowAllO) {
+      if (isRowOWinning) {
         return "o";
       }
     }
 
-    //Check the columns
+    // Check columns
     for (let col = 0; col < 3; col++) {
-      let isTheColumnAllX = true;
-      let isTheColumnAllO = true;
+      let isColumnXWinner = true;
+      let isColumnOWinner = true;
 
       for (let row = 0; row < 3; row++) {
-        if (boardMap[row][col] != "x") {
-          isTheColumnAllX = false;
+        if (winnerMap[row][col] !== "x") {
+          isColumnXWinner = false;
         }
-        if (boardMap[row][col] != "o") {
-          isTheColumnAllO = false;
+        if (winnerMap[row][col] !== "o") {
+          isColumnOWinner = false;
         }
       }
 
-      if (isTheColumnAllX) {
+      if (isColumnXWinner) {
         return "x";
       }
-
-      if (isTheColumnAllO) {
+      if (isColumnOWinner) {
         return "o";
       }
     }
-    //Check the diagonals
-    let isTheDiagonal1AllO = true;
-    let isTheDiagonal1AllX = true;
 
-    //This one is for the second diagonal
-    let isTheDiagonal2AllO = true;
-    let isTheDiagonal2AllX = true;
-
+    // check diagonals
+    let isDiagonal1OWinning = true;
+    let isDiagonal1XWinning = true;
+    let isDiagonal2OWinning = true;
+    let isDiagonal2XWinning = true;
     for (let i = 0; i < 3; i++) {
-      if (boardMap[i][i] != "o") {
-        isTheDiagonal1AllO = false;
+      if (winnerMap[i][i] !== "o") {
+        isDiagonal1OWinning = false;
       }
-      if (boardMap[i][i] != "x") {
-        isTheDiagonal1AllX = false;
+      if (winnerMap[i][i] !== "x") {
+        isDiagonal1XWinning = false;
       }
 
-      //Check second diagonal
-      if (boardMap[i][2 - i] != "o") {
-        isTheDiagonal2AllO = false;
+      if (winnerMap[i][2 - i] !== "o") {
+        isDiagonal2OWinning = false;
       }
-      if (boardMap[i][2 - i] != "x") {
-        isTheDiagonal2AllX = false;
+      if (winnerMap[i][2 - i] !== "x") {
+        isDiagonal2XWinning = false;
       }
     }
 
-    if (isTheDiagonal1AllO || isTheDiagonal2AllO) {
+    if (isDiagonal1OWinning || isDiagonal2OWinning) {
       return "o";
     }
-    if (isTheDiagonal1AllX || isTheDiagonal2AllX) {
+    if (isDiagonal1XWinning || isDiagonal2XWinning) {
       return "x";
     }
   };
@@ -145,6 +147,58 @@ export default function App() {
     setCurrentTurn("x");
   };
 
+  const botTurn = () => {
+    //Look at all the possible options
+    const possiblePositions = [];
+    boardMap.forEach((row, rowIndex) => {
+      row.forEach((cell, columnIndex) => {
+        if (cell === "") {
+          possiblePositions.push({ row: rowIndex, col: columnIndex });
+        }
+      });
+    });
+
+    let botChoosesOption;
+
+    if (gameMode === "BOT_HARD") {
+      //Attacking turn
+      possiblePositions.forEach((possiblePosition) => {
+        const copyMapArray = boardMapCopy(boardMap);
+        copyMapArray[possiblePosition.row][possiblePosition.col] = "o";
+
+        const winner = getWinner(copyMapArray);
+        if (winner === "o") {
+          botChoosesOption = possiblePosition;
+        }
+      });
+
+      if (!botChoosesOption) {
+        //Defending turn
+        //Double check if the opponent has a winning move
+        possiblePositions.forEach((possiblePosition) => {
+          const copyMapArray = boardMapCopy(boardMap);
+
+          copyMapArray[possiblePosition.row][possiblePosition.col] = "x";
+
+          const winner = getWinner(copyMapArray);
+          if (winner === "x") {
+            botChoosesOption = possiblePosition;
+          }
+        });
+      }
+    }
+
+    //Choose random move
+    if (!botChoosesOption) {
+      botChoosesOption =
+        possiblePositions[Math.floor(Math.random() * possiblePositions.length)];
+    }
+
+    if (botChoosesOption) {
+      onPress(botChoosesOption.row, botChoosesOption.col);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ImageBackground
@@ -167,6 +221,41 @@ export default function App() {
               ))}
             </View>
           ))}
+        </View>
+        <View style={styles.difficultyButton}>
+          <Text
+            onPress={() => setGameMode("LOCAL")}
+            style={[
+              styles.buttonText,
+              { backgroundColor: gameMode === "LOCAL" ? "#4F5686" : "#191F24" }, //if the button is pressed change color
+            ]}
+          >
+            Local
+          </Text>
+          <Text
+            onPress={() => setGameMode("BOT_EASY")}
+            style={[
+              styles.buttonText,
+              {
+                backgroundColor:
+                  gameMode === "BOT_EASY" ? "#4F5686" : "#191F24",
+              },
+            ]}
+          >
+            Easy
+          </Text>
+          <Text
+            onPress={() => setGameMode("BOT_HARD")}
+            style={[
+              styles.buttonText,
+              {
+                backgroundColor:
+                  gameMode === "BOT_HARD" ? "#4F5686" : "#191F24",
+              },
+            ]}
+          >
+            Hard
+          </Text>
         </View>
       </ImageBackground>
       <StatusBar style="auto" />
@@ -208,5 +297,20 @@ const styles = StyleSheet.create({
   mapRow: {
     flex: 1,
     flexDirection: "row",
+  },
+
+  difficultyButton: {
+    position: "absolute",
+    bottom: 50,
+    flexDirection: "row",
+  },
+
+  buttonText: {
+    color: "white",
+    margin: 10,
+    fontSize: 20,
+    backgroundColor: "#191F24",
+    padding: 10,
+    paddingHorizontal: 15,
   },
 });

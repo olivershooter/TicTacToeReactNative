@@ -5,8 +5,6 @@ const Nought = () => {
   return <View style={styles.nought} />;
 };
 
-export default Nought;
-
 const styles = StyleSheet.create({
   nought: {
     flex: 1,
@@ -19,3 +17,5 @@ const styles = StyleSheet.create({
     borderColor: "white",
   },
 });
+
+export default Nought;
