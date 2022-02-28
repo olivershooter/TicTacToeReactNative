@@ -12,7 +12,7 @@ import React, { useState } from "react";
 
 import bg from "./assets/bg.jpeg";
 
-import Cell from "./assets/src/components/Cell";
+import Cell from "./src/components/Cell";
 
 const emptyBoardMap = [
   ["", "", ""], //1st Row
