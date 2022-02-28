@@ -7,22 +7,25 @@ import {
   Pressable,
   Alert,
 } from "react-native";
-import bg from "./assets/bg.jpeg";
 
 import React, { useState } from "react";
 
+import bg from "./assets/bg.jpeg";
+
+import Cell from "./assets/src/components/Cell";
+
+const emptyBoardMap = [
+  ["", "", ""], //1st Row
+  ["", "", ""], //2nd Row
+  ["", "", ""], //3rd Row
+];
+
 export default function App() {
-  const [boardMap, setMap] = useState([
-    ["", "", ""], //1st Row
-    ["", "", ""], //2nd Row
-    ["", "", ""], //3rd Row
-  ]);
+  const [boardMap, setMap] = useState(emptyBoardMap);
 
   const [currentTurn, setCurrentTurn] = useState("x");
 
   const onPress = (rowIndex, columnIndex) => {
-    console.warn("hello", rowIndex, columnIndex);
-
     if (boardMap[rowIndex][columnIndex] !== "") {
       Alert.alert("Position already occupied");
       return;
@@ -36,20 +39,25 @@ export default function App() {
 
     setCurrentTurn(currentTurn === "x" ? "o" : "x");
 
-    checkWinningState();
+    const winner = getWinner();
+    if (winner) {
+      gameEnd(winner);
+    } else {
+      checkTiedState();
+    }
   };
 
-  const checkWinningState = () => {
+  const getWinner = () => {
     //Check the rows
     for (let i = 0; i < 3; i++) {
       const isTheRowAllX = boardMap[i].every((cell) => cell === "x");
       const isTheRowAllO = boardMap[i].every((cell) => cell === "o");
       if (isTheRowAllX) {
-        Alert.alert(`X's won. Row: ${i}.`);
+        return "x";
       }
 
       if (isTheRowAllO) {
-        Alert.alert(`O's won. Row: ${i}.`);
+        return "o";
       }
     }
 
@@ -68,11 +76,11 @@ export default function App() {
       }
 
       if (isTheColumnAllX) {
-        Alert.alert(`X's won. Column: ${col}.`);
+        return "x";
       }
 
       if (isTheColumnAllO) {
-        Alert.alert(`O's won. Column: ${col}.`);
+        return "o";
       }
     }
     //Check the diagonals
@@ -100,18 +108,41 @@ export default function App() {
       }
     }
 
-    if (isTheDiagonal1AllO) {
-      Alert.alert(`O won. Diagonal 1.`);
+    if (isTheDiagonal1AllO || isTheDiagonal2AllO) {
+      return "o";
     }
-    if (isTheDiagonal1AllX) {
-      Alert.alert(`X won. Diagonal 1.`);
+    if (isTheDiagonal1AllX || isTheDiagonal2AllX) {
+      return "x";
     }
-    if (isTheDiagonal2AllO) {
-      Alert.alert(`O won. Diagonal 1.`);
+  };
+
+  const checkTiedState = () => {
+    if (!boardMap.some((row) => row.some((cell) => cell === ""))) {
+      Alert.alert(`It's a tie`, `tie`, [
+        {
+          text: "Restart",
+          onPress: resetGame,
+        },
+      ]);
     }
-    if (isTheDiagonal2AllX) {
-      Alert.alert(`X won. Diagonal 1.`);
-    }
+  };
+
+  const gameEnd = (player) => {
+    Alert.alert(`Hurray`, `Player ${player} won`, [
+      {
+        text: "Restart",
+        onPress: resetGame,
+      },
+    ]);
+  };
+
+  const resetGame = () => {
+    setMap([
+      ["", "", ""], //1st Row
+      ["", "", ""], //2nd Row
+      ["", "", ""], //3rd Row
+    ]);
+    setCurrentTurn("x");
   };
 
   return (
@@ -121,35 +152,21 @@ export default function App() {
         style={styles.backgroundImage}
         resizeMode="contain"
       >
+        <Text style={styles.turnText}>
+          Current turn: {currentTurn.toUpperCase()}
+        </Text>
         <View style={styles.map}>
           {boardMap.map((row, rowIndex) => (
             <View key={`row-${rowIndex}`} style={styles.mapRow}>
               {row.map((cell, columnIndex) => (
-                <Pressable
-                  key={`row-${rowIndex}-${columnIndex}`}
+                <Cell
+                  key={`row-${rowIndex}-col${columnIndex}`}
+                  cell={cell}
                   onPress={() => onPress(rowIndex, columnIndex)}
-                  style={styles.mapCell}
-                >
-                  {cell === "o" && <View style={styles.nought} />}
-                  {cell === "x" && (
-                    <View style={styles.crossContainer}>
-                      <View style={styles.crossLine} />
-                      <View
-                        style={[styles.crossLine, styles.crossLineInvert]}
-                      />
-                    </View>
-                  )}
-                </Pressable>
+                />
               ))}
             </View>
           ))}
-
-          {/* <View style={styles.nought} />
-
-          <View style={styles.crossContainer}>
-            <View style={styles.crossLine} />
-            <View style={[styles.crossLine, styles.crossLineInvert]} />
-          </View> */}
         </View>
       </ImageBackground>
       <StatusBar style="auto" />
@@ -172,8 +189,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
 
-    //to force the nought into the center
+    //to force the pieces into the center
     paddingTop: 15,
+  },
+
+  turnText: {
+    fontSize: 24,
+    color: "white",
+    position: "absolute",
+    top: 50,
   },
 
   map: {
@@ -181,39 +205,8 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
   },
 
-  mapCell: { flex: 1 },
-
   mapRow: {
     flex: 1,
     flexDirection: "row",
-  },
-
-  nought: {
-    flex: 1,
-    borderRadius: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    margin: 10,
-
-    borderWidth: 10,
-    borderColor: "white",
-  },
-
-  crossContainer: {
-    flex: 1,
-  },
-
-  crossLine: {
-    position: "absolute",
-    left: "48%",
-    width: 10,
-    height: "100%",
-    borderRadius: 5,
-    backgroundColor: "white",
-    transform: [{ rotate: "45deg" }],
-  },
-
-  crossLineInvert: {
-    transform: [{ rotate: "-45deg" }],
   },
 });
