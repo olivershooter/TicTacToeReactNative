@@ -5,6 +5,11 @@ import React, { useState, useEffect } from "react";
 import bg from "./assets/bg.jpeg";
 import Cell from "./src/components/Cell";
 
+import Amplify from "aws-amplify";
+import config from "./src/aws-exports";
+
+Amplify.configure(config);
+
 const emptyBoardMap = [
   ["", "", ""], //1st Row
   ["", "", ""], //2nd Row
