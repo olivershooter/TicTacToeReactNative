@@ -1,0 +1,6 @@
+Need to check:
+
+
+Need to fix:
+Username on authentication (AWS) requires an email, then requests and email after...
+Mobile number, can I remove this?
