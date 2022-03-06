@@ -23,7 +23,7 @@ export default StyleSheet.create({
     fontSize: 24,
     color: "white",
     position: "absolute",
-    top: 95,
+    top: 20,
   },
 
   map: {

@@ -17,12 +17,21 @@ import Amplify from "aws-amplify";
 import { Auth } from "aws-amplify";
 import config from "./src/aws-exports";
 import { withAuthenticator } from "aws-amplify-react-native";
+import { DataStore } from "@aws-amplify/datastore";
+import { Game } from "./src/models";
 Amplify.configure(config);
 
 function App() {
   const [boardMap, setMap] = useState(emptyBoardMap);
   const [currentTurn, setCurrentTurn] = useState("x");
   const [gameMode, setGameMode] = useState("BOT_HARD");
+  const [game, setGame] = useState(null);
+
+  useEffect(() => {
+    if (gameMode === "ONLINE") {
+      findOrCreateOnlineGame;
+    }
+  }, [gameMode]);
 
   useEffect(() => {
     if (currentTurn === "o" && gameMode != "LOCAL") {
@@ -41,6 +50,36 @@ function App() {
       checkTiedState();
     }
   }, [boardMap]);
+
+  const findOrCreateOnlineGame = async () => {
+    //Search for an online game
+    const games = await getAvailableGames();
+    console.log(games);
+    //If no available online games, create a new game and wait
+    await createANewGame();
+  };
+
+  const getAvailableGames = async () => {
+    const games = await DataStore.query(Game);
+    return games;
+  };
+
+  const createANewGame = async () => {
+    //Need to find the data on the current logged in user to provide unique ID when creating game
+    const userData = await Auth.currentAuthenticatedUser();
+
+    const emptyStringMap = JSON.stringify(emptyBoardMap);
+    const newGame = new Game({
+      playerX: userData.attributes.sub, //
+      map: emptyStringMap, //
+      currentPlayer: "X", //
+      pointsX: 0,
+      pointsO: 0,
+    });
+    console.log(newGame);
+    const createdGame = await DataStore.save(newGame);
+    setGame(createdGame);
+  };
 
   const onPress = (rowIndex, columnIndex) => {
     if (boardMap[rowIndex][columnIndex] !== "") {
@@ -103,6 +142,11 @@ function App() {
         <Text style={styles.turnText}>
           Current turn: {currentTurn.toUpperCase()}
         </Text>
+        {game && (
+          <Text style={{ color: "white", padding: 15 }}>
+            Game ID: {game.id}
+          </Text>
+        )}
         <View style={styles.map}>
           {boardMap.map((row, rowIndex) => (
             <View key={`row-${rowIndex}`} style={styles.mapRow}>
@@ -151,6 +195,17 @@ function App() {
             ]}
           >
             Hard
+          </Text>
+          <Text
+            onPress={() => setGameMode("ONLINE")}
+            style={[
+              styles.buttonText,
+              {
+                backgroundColor: gameMode === "ONLINE" ? "#4F5686" : "#191F24",
+              },
+            ]}
+          >
+            Online
           </Text>
         </View>
       </ImageBackground>
