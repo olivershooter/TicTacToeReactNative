@@ -15,7 +15,8 @@
     "aws-amplify-react-native": "^6.0.3",
     "expo": "^44.0.6",
     "expo-status-bar": "~1.2.0",
-    "react": "17.0.1",
+    "graphql": "^16.3.0",
+    "react": "^17.0.1",
     "react-dom": "17.0.1",
     "react-native": "^0.67.3",
     "react-native-web": "0.17.1"

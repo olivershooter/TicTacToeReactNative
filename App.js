@@ -55,8 +55,16 @@ function App() {
     //Search for an online game
     const games = await getAvailableGames();
     console.log(games);
+
+    if (games.length > 0) {
+      joinGame(game);
+    }
     //If no available online games, create a new game and wait
     await createANewGame();
+  };
+
+  const joinGame = (game) => {
+    console.warn(`joining game ${game.id}`);
   };
 
   const getAvailableGames = async () => {
@@ -96,7 +104,8 @@ function App() {
     setCurrentTurn(currentTurn === "x" ? "o" : "x");
   };
 
-  const onLogout = () => {
+  const onLogout = async () => {
+    await DataStore.clear();
     Auth.signOut;
   };
 
@@ -136,17 +145,15 @@ function App() {
         style={styles.backgroundImage}
         resizeMode="contain"
       >
-        <Text onPress={() => onLogout()} style={styles.logOut}>
-          Log out
-        </Text>
-        <Text style={styles.turnText}>
-          Current turn: {currentTurn.toUpperCase()}
-        </Text>
         {game && (
           <Text style={{ color: "white", padding: 15 }}>
             Game ID: {game.id}
           </Text>
         )}
+        <Text style={styles.turnText}>
+          Current turn: {currentTurn.toUpperCase()}
+        </Text>
+
         <View style={styles.map}>
           {boardMap.map((row, rowIndex) => (
             <View key={`row-${rowIndex}`} style={styles.mapRow}>
@@ -206,6 +213,9 @@ function App() {
             ]}
           >
             Online
+          </Text>
+          <Text onPress={() => onLogout()} style={styles.buttonText}>
+            Log out
           </Text>
         </View>
       </ImageBackground>
