@@ -2,12 +2,15 @@ import { StatusBar } from "expo-status-bar";
 import { StyleSheet, Text, View, ImageBackground, Alert } from "react-native";
 import React, { useState, useEffect } from "react";
 
+//App
 import bg from "./assets/bg.jpeg";
 import Cell from "./src/components/Cell";
 
+//AWS
 import Amplify from "aws-amplify";
+import { Auth } from "aws-amplify";
 import config from "./src/aws-exports";
-
+import { withAuthenticator } from "aws-amplify-react-native";
 Amplify.configure(config);
 
 const emptyBoardMap = [
@@ -23,7 +26,7 @@ const boardMapCopy = (original) => {
   return copy;
 };
 
-export default function App() {
+function App() {
   const [boardMap, setMap] = useState(emptyBoardMap);
   const [currentTurn, setCurrentTurn] = useState("x");
   const [gameMode, setGameMode] = useState("BOT_HARD");
@@ -56,6 +59,10 @@ export default function App() {
     });
 
     setCurrentTurn(currentTurn === "x" ? "o" : "x");
+  };
+
+  const onLogout = () => {
+    Auth.signOut;
   };
 
   const getWinner = (winnerMap) => {
@@ -211,6 +218,9 @@ export default function App() {
         style={styles.backgroundImage}
         resizeMode="contain"
       >
+        <Text onPress={() => onLogout()} style={styles.logOut}>
+          Log out
+        </Text>
         <Text style={styles.turnText}>
           Current turn: {currentTurn.toUpperCase()}
         </Text>
@@ -232,7 +242,9 @@ export default function App() {
             onPress={() => setGameMode("LOCAL")}
             style={[
               styles.buttonText,
-              { backgroundColor: gameMode === "LOCAL" ? "#4F5686" : "#191F24" }, //if the button is pressed change color
+              {
+                backgroundColor: gameMode === "LOCAL" ? "#4F5686" : "#191F24",
+              }, //if the button is pressed change color
             ]}
           >
             Local
@@ -291,7 +303,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: "white",
     position: "absolute",
-    top: 50,
+    top: 95,
   },
 
   map: {
@@ -306,8 +318,8 @@ const styles = StyleSheet.create({
 
   difficultyButton: {
     position: "absolute",
-    bottom: 50,
     flexDirection: "row",
+    bottom: 50,
   },
 
   buttonText: {
@@ -315,7 +327,22 @@ const styles = StyleSheet.create({
     margin: 10,
     fontSize: 20,
     backgroundColor: "#191F24",
+    borderRadius: 10,
     padding: 10,
     paddingHorizontal: 15,
   },
+
+  logOut: {
+    position: "absolute",
+    right: 5,
+    top: 5,
+    margin: 20,
+    color: "white",
+    fontSize: 16,
+    padding: 10,
+    backgroundColor: "#191F24",
+    borderRadius: 10,
+  },
 });
+
+export default withAuthenticator(App);
