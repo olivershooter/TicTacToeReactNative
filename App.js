@@ -29,7 +29,7 @@ function App() {
 
   useEffect(() => {
     if (gameMode === "ONLINE") {
-      findOrCreateOnlineGame;
+      findOrCreateOnlineGame();
     }
   }, [gameMode]);
 
@@ -106,7 +106,7 @@ function App() {
 
   const onLogout = async () => {
     await DataStore.clear();
-    Auth.signOut;
+    Auth.currentAuthenticatedUser().then((user) => user.signOut());
   };
 
   const checkTiedState = () => {
@@ -145,15 +145,14 @@ function App() {
         style={styles.backgroundImage}
         resizeMode="contain"
       >
-        {game && (
-          <Text style={{ color: "white", padding: 15 }}>
-            Game ID: {game.id}
-          </Text>
-        )}
+        <Text onPress={() => onLogout()} style={styles.logOut}>
+          Log out
+        </Text>
+
         <Text style={styles.turnText}>
           Current turn: {currentTurn.toUpperCase()}
         </Text>
-
+        {game && <Text style={styles.gameID}>Game ID: {game.id}</Text>}
         <View style={styles.map}>
           {boardMap.map((row, rowIndex) => (
             <View key={`row-${rowIndex}`} style={styles.mapRow}>
@@ -167,56 +166,63 @@ function App() {
             </View>
           ))}
         </View>
+
         <View style={styles.difficultyButton}>
-          <Text
-            onPress={() => setGameMode("LOCAL")}
-            style={[
-              styles.buttonText,
-              {
-                backgroundColor: gameMode === "LOCAL" ? "#4F5686" : "#191F24",
-              }, //if the button is pressed change color
-            ]}
+          <View
+            style={{
+              flexDirection: "row",
+              alignContent: "center",
+              flexWrap: "wrap",
+            }}
           >
-            Local
-          </Text>
-          <Text
-            onPress={() => setGameMode("BOT_EASY")}
-            style={[
-              styles.buttonText,
-              {
-                backgroundColor:
-                  gameMode === "BOT_EASY" ? "#4F5686" : "#191F24",
-              },
-            ]}
-          >
-            Easy
-          </Text>
-          <Text
-            onPress={() => setGameMode("BOT_HARD")}
-            style={[
-              styles.buttonText,
-              {
-                backgroundColor:
-                  gameMode === "BOT_HARD" ? "#4F5686" : "#191F24",
-              },
-            ]}
-          >
-            Hard
-          </Text>
-          <Text
-            onPress={() => setGameMode("ONLINE")}
-            style={[
-              styles.buttonText,
-              {
-                backgroundColor: gameMode === "ONLINE" ? "#4F5686" : "#191F24",
-              },
-            ]}
-          >
-            Online
-          </Text>
-          <Text onPress={() => onLogout()} style={styles.buttonText}>
-            Log out
-          </Text>
+            <Text
+              onPress={() => setGameMode("LOCAL")}
+              style={[
+                styles.buttonText,
+                {
+                  backgroundColor: gameMode === "LOCAL" ? "#4F5686" : "#191F24",
+                }, //if the button is pressed change color
+              ]}
+            >
+              Local
+            </Text>
+            <Text
+              onPress={() => setGameMode("BOT_EASY")}
+              style={[
+                styles.buttonText,
+                {
+                  backgroundColor:
+                    gameMode === "BOT_EASY" ? "#4F5686" : "#191F24",
+                },
+              ]}
+            >
+              Easy
+            </Text>
+            <Text
+              onPress={() => setGameMode("BOT_HARD")}
+              style={[
+                styles.buttonText,
+                {
+                  backgroundColor:
+                    gameMode === "BOT_HARD" ? "#4F5686" : "#191F24",
+                },
+              ]}
+            >
+              Hard
+            </Text>
+            <Text
+              onPress={() => setGameMode("ONLINE")}
+              style={[
+                styles.buttonText,
+                {
+                  backgroundColor:
+                    gameMode === "ONLINE" ? "#4F5686" : "#191F24",
+                },
+              ]}
+            >
+              Online
+            </Text>
+          </View>
         </View>
       </ImageBackground>
       <StatusBar style="auto" />

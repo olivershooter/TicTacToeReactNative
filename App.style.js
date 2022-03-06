@@ -26,6 +26,13 @@ export default StyleSheet.create({
     top: 75,
   },
 
+  gameID: {
+    fontSize: 12,
+    color: "white",
+    position: "absolute",
+    top: 120,
+  },
+
   map: {
     width: "80%",
     aspectRatio: 1,
