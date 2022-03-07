@@ -46,6 +46,7 @@ export default StyleSheet.create({
   difficultyButton: {
     position: "absolute",
     flexDirection: "row",
+    alignContent: "center",
     bottom: 50,
   },
 

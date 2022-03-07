@@ -30,6 +30,8 @@ function App() {
   useEffect(() => {
     if (gameMode === "ONLINE") {
       findOrCreateOnlineGame();
+    } else {
+      deleteTempGame();
     }
   }, [gameMode]);
 
@@ -57,10 +59,11 @@ function App() {
     console.log(games);
 
     if (games.length > 0) {
-      joinGame(game);
+      joinGame(games[0]);
+    } else {
+      //If no available online games, create a new game and wait
+      await createANewGame();
     }
-    //If no available online games, create a new game and wait
-    await createANewGame();
   };
 
   const joinGame = (game) => {
@@ -87,6 +90,16 @@ function App() {
     console.log(newGame);
     const createdGame = await DataStore.save(newGame);
     setGame(createdGame);
+  };
+
+  const deleteTempGame = async () => {
+    if (!game || game.playerO) {
+      setGame(null);
+      return;
+    }
+
+    await DataStore.delete(Game, game.id);
+    setGame(null);
   };
 
   const onPress = (rowIndex, columnIndex) => {
