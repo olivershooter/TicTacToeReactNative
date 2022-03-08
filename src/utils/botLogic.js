@@ -1,10 +1,10 @@
 import { boardMapCopy } from "./index";
 import { getWinner } from "./gameLogic";
 
-export const botTurn = (boardMap, gameMode) => {
+export const botTurn = (map, gameMode) => {
   //Look at all the possible options
   const possiblePositions = [];
-  boardMap.forEach((row, rowIndex) => {
+  map.forEach((row, rowIndex) => {
     row.forEach((cell, columnIndex) => {
       if (cell === "") {
         possiblePositions.push({ row: rowIndex, col: columnIndex });
@@ -17,11 +17,11 @@ export const botTurn = (boardMap, gameMode) => {
   if (gameMode === "BOT_HARD") {
     //Attacking turn
     possiblePositions.forEach((possiblePosition) => {
-      const copyMapArray = boardMapCopy(boardMap);
-      copyMapArray[possiblePosition.row][possiblePosition.col] = "o";
+      const copyMapArray = boardMapCopy(map);
+      copyMapArray[possiblePosition.row][possiblePosition.col] = "O";
 
       const winner = getWinner(copyMapArray);
-      if (winner === "o") {
+      if (winner === "O") {
         botChoosesOption = possiblePosition;
       }
     });
@@ -30,12 +30,12 @@ export const botTurn = (boardMap, gameMode) => {
       //Defending turn
       //Double check if the opponent has a winning move
       possiblePositions.forEach((possiblePosition) => {
-        const copyMapArray = boardMapCopy(boardMap);
+        const copyMapArray = boardMapCopy(map);
 
-        copyMapArray[possiblePosition.row][possiblePosition.col] = "x";
+        copyMapArray[possiblePosition.row][possiblePosition.col] = "X";
 
         const winner = getWinner(copyMapArray);
-        if (winner === "x") {
+        if (winner === "X") {
           botChoosesOption = possiblePosition;
         }
       });

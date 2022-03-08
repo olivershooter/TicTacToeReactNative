@@ -1,14 +1,14 @@
 export const getWinner = (winnerMap) => {
   // Check rows
   for (let i = 0; i < 3; i++) {
-    const isRowXWinning = winnerMap[i].every((cell) => cell === "x");
-    const isRowOWinning = winnerMap[i].every((cell) => cell === "o");
+    const isRowXWinning = winnerMap[i].every((cell) => cell === "X");
+    const isRowOWinning = winnerMap[i].every((cell) => cell === "O");
 
     if (isRowXWinning) {
-      return "x";
+      return "X";
     }
     if (isRowOWinning) {
-      return "o";
+      return "O";
     }
   }
 
@@ -18,19 +18,19 @@ export const getWinner = (winnerMap) => {
     let isColumnOWinner = true;
 
     for (let row = 0; row < 3; row++) {
-      if (winnerMap[row][col] !== "x") {
+      if (winnerMap[row][col] !== "X") {
         isColumnXWinner = false;
       }
-      if (winnerMap[row][col] !== "o") {
+      if (winnerMap[row][col] !== "O") {
         isColumnOWinner = false;
       }
     }
 
     if (isColumnXWinner) {
-      return "x";
+      return "X";
     }
     if (isColumnOWinner) {
-      return "o";
+      return "O";
     }
   }
 
@@ -40,31 +40,31 @@ export const getWinner = (winnerMap) => {
   let isDiagonal2OWinning = true;
   let isDiagonal2XWinning = true;
   for (let i = 0; i < 3; i++) {
-    if (winnerMap[i][i] !== "o") {
+    if (winnerMap[i][i] !== "O") {
       isDiagonal1OWinning = false;
     }
-    if (winnerMap[i][i] !== "x") {
+    if (winnerMap[i][i] !== "X") {
       isDiagonal1XWinning = false;
     }
 
-    if (winnerMap[i][2 - i] !== "o") {
+    if (winnerMap[i][2 - i] !== "O") {
       isDiagonal2OWinning = false;
     }
-    if (winnerMap[i][2 - i] !== "x") {
+    if (winnerMap[i][2 - i] !== "X") {
       isDiagonal2XWinning = false;
     }
   }
 
   if (isDiagonal1OWinning || isDiagonal2OWinning) {
-    return "o";
+    return "O";
   }
   if (isDiagonal1XWinning || isDiagonal2XWinning) {
-    return "x";
+    return "X";
   }
 };
 
 //Essentially no cell in a row should be empty nor should a row have an empty string cell
 //Then it's a tie
-export const isTie = (boardMap) => {
-  return !boardMap.some((row) => row.some((cell) => cell === ""));
+export const isTie = (map) => {
+  return !map.some((row) => row.some((cell) => cell === ""));
 };

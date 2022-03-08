@@ -24,12 +24,15 @@ import { Game } from "./src/models";
 Amplify.configure({ ...config, Analytics: { disabled: true } });
 
 function App() {
-  const [boardMap, setMap] = useState(emptyBoardMap);
+  const [map, setMap] = useState(emptyBoardMap);
+  const [ourPlayerType, setOurPlayerType] = useState(null);
   const [currentTurn, setCurrentTurn] = useState("X");
+
   const [gameMode, setGameMode] = useState("BOT_HARD");
   const [game, setGame] = useState(null);
   const [userData, setUserData] = useState(null);
-  const [ourPlayerType, setOurPlayerType] = useState(null);
+
+  const [gameFinished, setGameFinished] = useState(false);
 
   useEffect(() => {
     resetGame();
@@ -38,11 +41,15 @@ function App() {
     } else {
       deleteTempGame();
     }
+    setCurrentTurn("X");
+    if (gameMode !== "ONLINE") {
+      setOurPlayerType("X");
+    }
   }, [gameMode]);
 
   useEffect(() => {
     if (currentTurn === "O" && ["BOT_EASY", "BOT_HARD"].includes(gameMode)) {
-      const botChoosesOption = botTurn(boardMap, gameMode);
+      const botChoosesOption = botTurn(map, gameMode);
       if (botChoosesOption) {
         onPress(botChoosesOption.row, botChoosesOption.col);
       }
@@ -50,25 +57,23 @@ function App() {
   }, [currentTurn, gameMode]);
 
   useEffect(() => {
-    if (!game) {
-      return;
-    }
-    DataStore.save(
-      Game.copyOf(game, (g) => {
-        g.currentPlayer = currentTurn;
-        g.boardMap = JSON.stringify(boardMap);
-      })
-    );
-  }, [currentTurn, boardMap]);
+    updateGame();
+  }, [currentTurn]);
 
   useEffect(() => {
-    const winner = getWinner(boardMap);
+    if (gameFinished) {
+      return;
+    }
+    const winner = getWinner(map);
     if (winner) {
       gameEnd(winner);
+      setGameFinished(true);
     } else {
       checkTiedState();
     }
-  }, [boardMap]);
+
+    setGameFinished(true);
+  }, [map]);
 
   useEffect(() => {
     Auth.currentAuthenticatedUser().then(setUserData);
@@ -80,10 +85,15 @@ function App() {
     }
     const subscription = DataStore.observe(Game, game.id).subscribe((msg) => {
       console.log(msg.model, msg.opType, msg.element);
+      const newGame = msg.element;
       if (msg.opType === "UPDATE") {
-        setGame(msg.element);
-        setMap(JSON.parse(msg.element.boardMap));
-        setCurrentTurn(msg.element.currentPlayer);
+        setGame(newGame);
+        if (newGame.map) {
+          setMap(JSON.parse(newGame.map));
+        }
+        if (newGame.currentPlayer) {
+          setCurrentTurn(newGame.currentPlayer);
+        }
       }
     });
 
@@ -113,7 +123,7 @@ function App() {
   };
 
   const getAvailableGames = async () => {
-    const games = await DataStore.query(Game, (g) => g.playerO("eq", null));
+    const games = await DataStore.query(Game, (g) => g.playerO("eq", ""));
     return games;
   };
 
@@ -126,6 +136,7 @@ function App() {
 
     const newGame = new Game({
       playerX: userData.attributes.sub, //
+      playerO: "",
       map: emptyStringMap, //
       currentPlayer: "X", //
       pointsX: 0,
@@ -133,7 +144,19 @@ function App() {
     });
     const createdGame = await DataStore.save(newGame);
     setGame(createdGame);
-    setOurPlayerType("O");
+    setOurPlayerType("X");
+  };
+
+  const updateGame = () => {
+    if (!game) {
+      return;
+    }
+    DataStore.save(
+      Game.copyOf(game, (g) => {
+        g.currentPlayer = currentTurn;
+        g.map = JSON.stringify(map);
+      })
+    );
   };
 
   const deleteTempGame = async () => {
@@ -147,12 +170,12 @@ function App() {
   };
 
   const onPress = (rowIndex, columnIndex) => {
-    if (gameMode === "ONLINE" && game?.currentPlayer !== ourPlayerType) {
+    if (gameMode === "ONLINE" && currentTurn != ourPlayerType) {
       Alert.alert("Not your turn");
       return;
     }
 
-    if (boardMap[rowIndex][columnIndex] !== "") {
+    if (map[rowIndex][columnIndex] !== "") {
       Alert.alert("Position already occupied");
       return;
     }
@@ -172,13 +195,14 @@ function App() {
   };
 
   const checkTiedState = () => {
-    if (isTie(boardMap)) {
+    if (isTie(map)) {
       Alert.alert(`It's a tie`, `tie`, [
         {
           text: "Restart",
           onPress: resetGame,
         },
       ]);
+      setGameFinished(true);
     }
   };
 
@@ -198,6 +222,7 @@ function App() {
       ["", "", ""], //3rd Row
     ]);
     setCurrentTurn("X");
+    setGameFinished(true);
   };
 
   return (
@@ -216,7 +241,7 @@ function App() {
         </Text>
         {game && <Text style={styles.gameID}>Game ID: {game.id}</Text>}
         <View style={styles.map}>
-          {boardMap.map((row, rowIndex) => (
+          {map.map((row, rowIndex) => (
             <View key={`row-${rowIndex}`} style={styles.mapRow}>
               {row.map((cell, columnIndex) => (
                 <Cell

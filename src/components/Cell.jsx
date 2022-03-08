@@ -8,8 +8,8 @@ const Cell = (props) => {
   const { cell, onPress } = props;
   return (
     <Pressable onPress={() => onPress()} style={styles.mapCell}>
-      {cell === "o" && <Nought />}
-      {cell === "x" && <Cross />}
+      {cell === "O" && <Nought />}
+      {cell === "X" && <Cross />}
     </Pressable>
   );
 };
