@@ -5,29 +5,34 @@ import React, { useState, useEffect } from "react";
 //App
 import bg from "./assets/bg.jpeg";
 
-import styles from "./App.style";
-
 import Cell from "./src/components/Cell";
 import { emptyBoardMap } from "./src/utils/index.js";
 import { getWinner, isTie } from "./src/utils/gameLogic.js";
 import { botTurn } from "./src/utils/botLogic";
 
+//Stylesheet
+import styles from "./App.style";
+
 //AWS
 import Amplify from "aws-amplify";
+import { Analytics } from "aws-amplify";
 import { Auth } from "aws-amplify";
 import config from "./src/aws-exports";
 import { withAuthenticator } from "aws-amplify-react-native";
 import { DataStore } from "@aws-amplify/datastore";
 import { Game } from "./src/models";
-Amplify.configure(config);
+Amplify.configure({ ...config, Analytics: { disabled: true } });
 
 function App() {
   const [boardMap, setMap] = useState(emptyBoardMap);
-  const [currentTurn, setCurrentTurn] = useState("x");
+  const [currentTurn, setCurrentTurn] = useState("X");
   const [gameMode, setGameMode] = useState("BOT_HARD");
   const [game, setGame] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [ourPlayerType, setOurPlayerType] = useState(null);
 
   useEffect(() => {
+    resetGame();
     if (gameMode === "ONLINE") {
       findOrCreateOnlineGame();
     } else {
@@ -36,13 +41,25 @@ function App() {
   }, [gameMode]);
 
   useEffect(() => {
-    if (currentTurn === "o" && gameMode != "LOCAL") {
+    if (currentTurn === "O" && ["BOT_EASY", "BOT_HARD"].includes(gameMode)) {
       const botChoosesOption = botTurn(boardMap, gameMode);
       if (botChoosesOption) {
         onPress(botChoosesOption.row, botChoosesOption.col);
       }
     }
   }, [currentTurn, gameMode]);
+
+  useEffect(() => {
+    if (!game) {
+      return;
+    }
+    DataStore.save(
+      Game.copyOf(game, (g) => {
+        g.currentPlayer = currentTurn;
+        g.boardMap = JSON.stringify(boardMap);
+      })
+    );
+  }, [currentTurn, boardMap]);
 
   useEffect(() => {
     const winner = getWinner(boardMap);
@@ -53,10 +70,29 @@ function App() {
     }
   }, [boardMap]);
 
+  useEffect(() => {
+    Auth.currentAuthenticatedUser().then(setUserData);
+  }, []);
+
+  useEffect(() => {
+    if (!game) {
+      return;
+    }
+    const subscription = DataStore.observe(Game, game.id).subscribe((msg) => {
+      console.log(msg.model, msg.opType, msg.element);
+      if (msg.opType === "UPDATE") {
+        setGame(msg.element);
+        setMap(JSON.parse(msg.element.boardMap));
+        setCurrentTurn(msg.element.currentPlayer);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [game]);
+
   const findOrCreateOnlineGame = async () => {
     //Search for an online game
     const games = await getAvailableGames();
-    console.log(games);
 
     if (games.length > 0) {
       joinGame(games[0]);
@@ -66,20 +102,28 @@ function App() {
     }
   };
 
-  const joinGame = (game) => {
-    console.warn(`joining game ${game.id}`);
+  const joinGame = async (game) => {
+    const updatedGame = await DataStore.save(
+      Game.copyOf(game, (updatedGame) => {
+        updatedGame.playerO = userData.attributes.sub;
+      })
+    );
+    setGame(updatedGame);
+    setOurPlayerType("O");
   };
 
   const getAvailableGames = async () => {
-    const games = await DataStore.query(Game);
+    const games = await DataStore.query(Game, (g) => g.playerO("eq", null));
     return games;
   };
 
   const createANewGame = async () => {
-    //Need to find the data on the current logged in user to provide unique ID when creating game
-    const userData = await Auth.currentAuthenticatedUser();
+    const emptyStringMap = JSON.stringify([
+      ["", "", ""], //1st Row
+      ["", "", ""], //2nd Row
+      ["", "", ""], //3rd Row
+    ]);
 
-    const emptyStringMap = JSON.stringify(emptyBoardMap);
     const newGame = new Game({
       playerX: userData.attributes.sub, //
       map: emptyStringMap, //
@@ -87,9 +131,9 @@ function App() {
       pointsX: 0,
       pointsO: 0,
     });
-    console.log(newGame);
     const createdGame = await DataStore.save(newGame);
     setGame(createdGame);
+    setOurPlayerType("O");
   };
 
   const deleteTempGame = async () => {
@@ -103,6 +147,11 @@ function App() {
   };
 
   const onPress = (rowIndex, columnIndex) => {
+    if (gameMode === "ONLINE" && game?.currentPlayer !== ourPlayerType) {
+      Alert.alert("Not your turn");
+      return;
+    }
+
     if (boardMap[rowIndex][columnIndex] !== "") {
       Alert.alert("Position already occupied");
       return;
@@ -114,7 +163,7 @@ function App() {
       return updatedMap;
     });
 
-    setCurrentTurn(currentTurn === "x" ? "o" : "x");
+    setCurrentTurn(currentTurn === "X" ? "O" : "X");
   };
 
   const onLogout = async () => {
@@ -148,7 +197,7 @@ function App() {
       ["", "", ""], //2nd Row
       ["", "", ""], //3rd Row
     ]);
-    setCurrentTurn("x");
+    setCurrentTurn("X");
   };
 
   return (
